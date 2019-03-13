@@ -1,0 +1,36 @@
+{
+  "name": "yg-chart",
+  "version": "1.0.0",
+  "description": "chart library",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "eslint": "eslint ./ --fix",
+    "start": "parcel src/index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YuraGolomb/telegram-contest.git"
+  },
+  "keywords": [
+    "chart",
+    "js"
+  ],
+  "author": "YuraGolomb",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/YuraGolomb/telegram-contest/issues"
+  },
+  "homepage": "https://github.com/YuraGolomb/telegram-contest#readme",
+  "devDependencies": {
+    "eslint": "^5.15.1",
+    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-react": "^7.12.4",
+    "parcel": "^1.12.1"
+  },
+  "dependencies": {
+    "babel-eslint": "^10.0.1",
+    "eslint-config-react-app": "^3.0.8",
+    "tinytime": "^0.2.6"
+  }
+}
