@@ -8,7 +8,7 @@ const parseColumn = rawColumn => ({
 const timeTemplate = tinytime('MM DD');
 
 class Chart {
-  constructor(rawChart, x = 1000, y = 500) {
+  constructor(rawChart, width = 1000, height = 500, paddingX = 30, paddingY = 30) {
     const columns = rawChart.columns.map(parseColumn);
     columns.forEach((column) => {
       const { min, max } = column.values.reduce((acc, value) => {
@@ -33,21 +33,25 @@ class Chart {
 
     this.ticks = this.xColumn.values.length;
 
-    this.x = x;
-    this.y = y;
+    this.width = width;
+    this.contentWidth = width - (paddingX * 2);
+    this.paddingX = paddingX;
+    this.height = height;
+    this.contentHeight = height - (paddingY * 2);
+    this.paddingY = paddingY;
     this.getChartPaths = this.getChartPaths.bind(this);
   }
 
-  getChartPaths(offsetX = 30, offsetY = 30, width = 940, height = 440) {
+  getChartPaths() {
     const paths = [];
     for (let columnIndex = 0; columnIndex < this.lineColumns.length; columnIndex++) {
       const path = new Path2D();
       const column = this.lineColumns[columnIndex];
-      const distanceX = width / column.values.length;
-      const distanceY = height / (column.max - column.min);
-      path.moveTo(offsetX, (height + (offsetY * 2)) - (column.values[0] * distanceY));
+      const distanceX = this.contentWidth / column.values.length;
+      const distanceY = this.contentHeight / (column.max - column.min);
+      path.moveTo(this.paddingX, this.height - (column.values[0] * distanceY));
       for (let i = 1; i < column.values.length; i++) {
-        path.lineTo(offsetX + (i * distanceX), (height + (offsetY * 2)) - (column.values[i] * distanceY));
+        path.lineTo(this.paddingX + (i * distanceX), this.height - (column.values[i] * distanceY));
       }
       paths.push({ path, color: column.color });
     }

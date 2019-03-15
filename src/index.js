@@ -1,5 +1,6 @@
 import './index.css';
 import Charts from './Charts';
+import Minimap from './Minimap';
 
 const drawSeparatorsX = (x, y, count, width) => {
   const path = new Path2D();
@@ -17,6 +18,9 @@ const drawSeparatorsX = (x, y, count, width) => {
 };
 
 const canvas = document.getElementById('chart');
+const canvasMinimap = document.getElementById('chart-minimap');
+const minimapYZoom = 0.1;
+
 
 const ctx = canvas.getContext('2d');
 Charts.dowloadCharts();
@@ -24,20 +28,42 @@ Charts.dowloadCharts();
 const charts = Charts.charts;
 const chart = charts[0];
 
-canvas.width = chart.x;
-canvas.height = chart.y;
+canvas.width = chart.width;
+canvas.height = chart.height;
+const minimap = new Minimap(canvasMinimap, chart.width, chart.height, chart.paddingX, minimapYZoom);
+
 
 const xCoordPath = new Path2D();
 
-xCoordPath.moveTo(30, chart.y - 30);
-xCoordPath.lineTo(chart.x - 30, chart.y - 30);
+xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
+xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
 
 ctx.stroke(xCoordPath);
 
-ctx.stroke(drawSeparatorsX(30, chart.y - 30, chart.ticks, chart.x - 60));
-
-chart.getChartPaths().forEach(({ path, color }) => {
+ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
+const chartPaths = chart.getChartPaths();
+chartPaths.forEach(({ path, color }) => {
   ctx.strokeStyle = color;
   ctx.stroke(path);
 });
 
+const scale = function(xzoom) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // clear scale
+  ctx.scale(1 / xzoom, 1);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
+  xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
+
+  ctx.stroke(xCoordPath);
+
+  ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
+  chartPaths.forEach(({ path, color }) => {
+    ctx.strokeStyle = color;
+    ctx.stroke(path);
+  });
+};
+
+minimap.setChartPaths(chartPaths);
+minimap.drawMinimap();
+minimap.subscribeForZoom(scale);

@@ -1,1 +1,1 @@
-{"version":3,"sources":["index.css"],"names":[],"mappings":"AAAA;AACA;AACA;AACA","file":"src.e31bb0bc.css","sourceRoot":"../src","sourcesContent":["canvas {\n  outline: 1px solid black;\n}\n"]}
+{"version":3,"sources":["index.css"],"names":[],"mappings":"AAAA;AACA;AACA;AACA;AACA;AACA;AACA;AACA","file":"src.e31bb0bc.css","sourceRoot":"../src","sourcesContent":["canvas {\n  outline: 1px solid black;\n}\n\ncanvas + canvas {\n  margin-top: 20px;\n}\n"]}

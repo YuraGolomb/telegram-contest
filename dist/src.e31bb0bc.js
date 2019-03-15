@@ -564,8 +564,10 @@ var Chart =
 /*#__PURE__*/
 function () {
   function Chart(rawChart) {
-    var x = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1000;
-    var y = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 500;
+    var width = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1000;
+    var height = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 500;
+    var paddingX = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 30;
+    var paddingY = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 30;
 
     _classCallCheck(this, Chart);
 
@@ -600,29 +602,29 @@ function () {
       return timeTemplate.render(new Date(v));
     });
     this.ticks = this.xColumn.values.length;
-    this.x = x;
-    this.y = y;
+    this.width = width;
+    this.contentWidth = width - paddingX * 2;
+    this.paddingX = paddingX;
+    this.height = height;
+    this.contentHeight = height - paddingY * 2;
+    this.paddingY = paddingY;
     this.getChartPaths = this.getChartPaths.bind(this);
   }
 
   _createClass(Chart, [{
     key: "getChartPaths",
     value: function getChartPaths() {
-      var offsetX = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 30;
-      var offsetY = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 30;
-      var width = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 940;
-      var height = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 440;
       var paths = [];
 
       for (var columnIndex = 0; columnIndex < this.lineColumns.length; columnIndex++) {
         var path = new Path2D();
         var column = this.lineColumns[columnIndex];
-        var distanceX = width / column.values.length;
-        var distanceY = height / (column.max - column.min);
-        path.moveTo(offsetX, height + offsetY * 2 - column.values[0] * distanceY);
+        var distanceX = this.contentWidth / column.values.length;
+        var distanceY = this.contentHeight / (column.max - column.min);
+        path.moveTo(this.paddingX, this.height - column.values[0] * distanceY);
 
         for (var i = 1; i < column.values.length; i++) {
-          path.lineTo(offsetX + i * distanceX, height + offsetY * 2 - column.values[i] * distanceY);
+          path.lineTo(this.paddingX + i * distanceX, this.height - column.values[i] * distanceY);
         }
 
         paths.push({
@@ -684,12 +686,270 @@ function () {
 var _default = new Charts();
 
 exports.default = _default;
-},{"../chart_data":"../chart_data.js","./Chart":"Chart.js"}],"index.js":[function(require,module,exports) {
+},{"../chart_data":"../chart_data.js","./Chart":"Chart.js"}],"Minimap.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var borderWidth = 3;
+var cursors = {
+  default: 'default',
+  resize: 'w-resize',
+  pointer: 'pointer'
+};
+
+var Minimap =
+/*#__PURE__*/
+function () {
+  function Minimap(canvas, width, height, paddingX) {
+    var minimapYZoom = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0.1;
+
+    _classCallCheck(this, Minimap);
+
+    this.canvas = canvas;
+    canvas.width = width;
+    canvas.height = height * minimapYZoom;
+    var BB = canvas.getBoundingClientRect();
+    this.canvasLeft = BB.left;
+    this.canvasTop = BB.top;
+    this.ctx = canvas.getContext('2d');
+    this.ctx.scale(1, minimapYZoom);
+    this.isMouseDown = false;
+    this.target = ''; // 'left-middle', 'right-middle', 'left-right-middle'
+
+    this.mousePosX = 0;
+    this.mousePosY = 0;
+    this.contentWidth = width - 2 * paddingX;
+    this.width = width;
+    this.height = height;
+    this.paddingX = paddingX;
+    this.offsetLeft = paddingX;
+    this.offsetRight = width - paddingX;
+    this.setChartPaths = this.setChartPaths.bind(this);
+    this.drawHidden = this.drawHidden.bind(this);
+    this.onMouseMove = this.onMouseMove.bind(this);
+    this.onMouseDown = this.onMouseDown.bind(this);
+    this.onDocumentMouseMove = this.onDocumentMouseMove.bind(this);
+    this.subscribeForZoom = this.subscribeForZoom.bind(this);
+    this.onDocumentMouseUp = this.onDocumentMouseUp.bind(this);
+    this.canvas.onmousemove = this.onMouseMove;
+    this.canvas.onmousedown = this.onMouseDown;
+    this.drawHidden();
+  }
+
+  _createClass(Minimap, [{
+    key: "onMouseDown",
+    value: function onMouseDown(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var posX = parseInt(e.clientX - this.canvasLeft);
+      var posY = parseInt(e.clientY - this.canvasTop);
+      this.mousePosX = posX;
+      this.mousePosY = posY;
+
+      if (this.ctx.isPointInPath(this.leftBorder, posX, posY)) {
+        this.target = 'left-middle';
+        document.body.style.cursor = cursors.resize;
+        this.isMouseDown = true;
+      } else if (this.ctx.isPointInPath(this.rightBorder, posX, posY)) {
+        this.target = 'middle-right';
+        document.body.style.cursor = cursors.resize;
+        this.isMouseDown = true;
+      } else if (this.ctx.isPointInPath(this.transparentRect, posX, posY)) {
+        this.target = 'left-middle-right';
+        document.body.style.cursor = cursors.pointer;
+        this.isMouseDown = true;
+      } else {
+        document.body.style.cursor = cursors.default;
+      }
+
+      document.onmousemove = this.onDocumentMouseMove;
+      document.onmouseup = this.onDocumentMouseUp;
+    }
+  }, {
+    key: "onDocumentMouseMove",
+    value: function onDocumentMouseMove(e) {
+      var posX = parseInt(e.clientX - this.canvasLeft);
+
+      if (this.target === 'left-middle') {
+        var newOffsetLeft = this.offsetLeft - (this.mousePosX - posX);
+        this.setOffsetLeft(newOffsetLeft);
+        this.drawMinimap();
+        var perc = (this.offsetRight - this.offsetLeft) / this.contentWidth;
+
+        if (this.zoomCallback) {
+          this.zoomCallback(perc);
+        }
+      } else if (this.target === 'middle-right') {
+        var newOffsetRight = this.offsetRight - (this.mousePosX - posX);
+        this.setOffsetRight(newOffsetRight);
+        this.drawMinimap();
+
+        var _perc = (this.offsetRight - this.offsetLeft) / this.contentWidth;
+
+        if (this.zoomCallback) {
+          this.zoomCallback(_perc);
+        }
+      } else if (this.target === 'left-middle-right') {
+        var _newOffsetRight = this.offsetRight - (this.mousePosX - posX);
+
+        var _newOffsetLeft = this.offsetLeft - (this.mousePosX - posX);
+
+        if (_newOffsetRight > this.width - this.paddingX) {
+          if (this.offsetRight < this.width - this.paddingX) {
+            var diff = this.width - this.paddingX - this.offsetRight;
+            this.setOffsetRight(this.width - this.paddingX);
+            this.setOffsetLeft(this.offsetLeft + diff);
+          }
+        } else if (_newOffsetLeft < this.paddingX) {
+          if (this.offsetLeft > this.paddingX) {
+            var _diff = this.offsetLeft - this.paddingX;
+
+            this.setOffsetLeft(this.paddingX);
+            this.setOffsetRight(this.offsetRight - _diff);
+          }
+        } else {
+          this.setOffsetLeft(_newOffsetLeft);
+          this.setOffsetRight(_newOffsetRight);
+        }
+
+        this.drawMinimap();
+      }
+
+      this.mousePosX = posX;
+    }
+  }, {
+    key: "setOffsetRight",
+    value: function setOffsetRight(offset) {
+      if (offset > this.width - this.paddingX) this.offsetRight = this.width - this.paddingX;else if (offset < this.offsetLeft + 20) this.offsetRight = this.offsetLeft + 20;else this.offsetRight = offset;
+    }
+  }, {
+    key: "setOffsetLeft",
+    value: function setOffsetLeft(offset) {
+      if (offset < this.paddingX) this.offsetLeft = this.paddingX;else if (offset > this.offsetRight - 20) this.offsetLeft = this.offsetRight - 20;else this.offsetLeft = offset;
+    }
+  }, {
+    key: "subscribeForZoom",
+    value: function subscribeForZoom(zoomCallback) {
+      this.zoomCallback = zoomCallback;
+    }
+  }, {
+    key: "onDocumentMouseUp",
+    value: function onDocumentMouseUp(e) {
+      this.isMouseDown = false;
+      this.target = '';
+      document.body.style.cursor = cursors.default;
+      document.onmousemove = null;
+      document.onmouseup = null;
+      this.onMouseMove(e);
+    }
+  }, {
+    key: "onMouseMove",
+    value: function onMouseMove(e) {
+      if (this.isMouseDown) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var posX = parseInt(e.clientX - this.canvasLeft);
+      var posY = parseInt(e.clientY - this.canvasTop);
+
+      if (this.ctx.isPointInPath(this.leftBorder, posX, posY) || this.ctx.isPointInPath(this.rightBorder, posX, posY)) {
+        this.canvas.style.cursor = cursors.resize;
+      } else if (this.ctx.isPointInPath(this.transparentRect, posX, posY)) {
+        this.canvas.style.cursor = cursors.pointer;
+      } else {
+        this.canvas.style.cursor = cursors.default;
+      }
+    }
+  }, {
+    key: "setChartPaths",
+    value: function setChartPaths(chartPaths) {
+      this.chartPaths = chartPaths;
+    }
+  }, {
+    key: "drawMinimap",
+    value: function drawMinimap() {
+      var _this = this;
+
+      this.ctx.clearRect(0, 0, this.width, this.height);
+      this.chartPaths.forEach(function (_ref) {
+        var path = _ref.path,
+            color = _ref.color;
+        _this.ctx.strokeStyle = color;
+
+        _this.ctx.stroke(path);
+      });
+      this.drawHidden();
+    }
+  }, {
+    key: "drawHidden",
+    value: function drawHidden() {
+      this.leftHidden = {
+        x1: 0,
+        x2: this.offsetLeft,
+        y1: 0,
+        y2: this.height
+      };
+      this.rightHidden = {
+        x1: 0,
+        x2: this.offsetLeft,
+        y1: 0,
+        y2: this.height
+      };
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      this.ctx.fillRect(0, 0, this.offsetLeft, this.height);
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      this.ctx.fillRect(this.offsetRight, 0, this.width, this.height);
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0)';
+      var transparentRect = new Path2D();
+      transparentRect.moveTo(this.offsetLeft, 0);
+      transparentRect.lineTo(this.offsetRight, 0);
+      transparentRect.lineTo(this.offsetRight, this.height);
+      transparentRect.lineTo(this.offsetLeft, this.height);
+      transparentRect.lineTo(this.offsetLeft, 0);
+      this.transparentRect = transparentRect;
+      this.ctx.stroke(transparentRect);
+      var leftBorder = new Path2D();
+      leftBorder.moveTo(this.offsetLeft - borderWidth, 0);
+      leftBorder.lineTo(this.offsetLeft + borderWidth, 0);
+      leftBorder.lineTo(this.offsetLeft + borderWidth, this.height);
+      leftBorder.lineTo(this.offsetLeft - borderWidth, this.height);
+      leftBorder.lineTo(this.offsetLeft - borderWidth, 0);
+      this.leftBorder = leftBorder;
+      var rightBorder = new Path2D();
+      rightBorder.moveTo(this.offsetRight - borderWidth, 0);
+      rightBorder.lineTo(this.offsetRight + borderWidth, 0);
+      rightBorder.lineTo(this.offsetRight + borderWidth, this.height);
+      rightBorder.lineTo(this.offsetRight - borderWidth, this.height);
+      rightBorder.lineTo(this.offsetRight - borderWidth, 0);
+      this.rightBorder = rightBorder;
+      this.ctx.stroke(leftBorder);
+      this.ctx.stroke(rightBorder);
+    }
+  }]);
+
+  return Minimap;
+}();
+
+var _default = Minimap;
+exports.default = _default;
+},{}],"index.js":[function(require,module,exports) {
 "use strict";
 
 require("./index.css");
 
 var _Charts = _interopRequireDefault(require("./Charts"));
+
+var _Minimap = _interopRequireDefault(require("./Minimap"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -709,26 +969,51 @@ var drawSeparatorsX = function drawSeparatorsX(x, y, count, width) {
 };
 
 var canvas = document.getElementById('chart');
+var canvasMinimap = document.getElementById('chart-minimap');
+var minimapYZoom = 0.1;
 var ctx = canvas.getContext('2d');
 
 _Charts.default.dowloadCharts();
 
 var charts = _Charts.default.charts;
 var chart = charts[0];
-canvas.width = chart.x;
-canvas.height = chart.y;
+canvas.width = chart.width;
+canvas.height = chart.height;
+var minimap = new _Minimap.default(canvasMinimap, chart.width, chart.height, chart.paddingX, minimapYZoom);
 var xCoordPath = new Path2D();
-xCoordPath.moveTo(30, chart.y - 30);
-xCoordPath.lineTo(chart.x - 30, chart.y - 30);
+xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
+xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
 ctx.stroke(xCoordPath);
-ctx.stroke(drawSeparatorsX(30, chart.y - 30, chart.ticks, chart.x - 60));
-chart.getChartPaths().forEach(function (_ref) {
+ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
+var chartPaths = chart.getChartPaths();
+chartPaths.forEach(function (_ref) {
   var path = _ref.path,
       color = _ref.color;
   ctx.strokeStyle = color;
   ctx.stroke(path);
 });
-},{"./index.css":"index.css","./Charts":"Charts.js"}],"../node_modules/parcel/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+
+var scale = function scale(xzoom) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // clear scale
+
+  ctx.scale(1 / xzoom, 1);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
+  xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
+  ctx.stroke(xCoordPath);
+  ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
+  chartPaths.forEach(function (_ref2) {
+    var path = _ref2.path,
+        color = _ref2.color;
+    ctx.strokeStyle = color;
+    ctx.stroke(path);
+  });
+};
+
+minimap.setChartPaths(chartPaths);
+minimap.drawMinimap();
+minimap.subscribeForZoom(scale);
+},{"./index.css":"index.css","./Charts":"Charts.js","./Minimap":"Minimap.js"}],"../node_modules/parcel/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -756,7 +1041,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "36715" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "41565" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

@@ -2,5 +2,9 @@ canvas {
   outline: 1px solid black;
 }
 
+canvas + canvas {
+  margin-top: 20px;
+}
+
 
 /*# sourceMappingURL=/src.e31bb0bc.css.map */
