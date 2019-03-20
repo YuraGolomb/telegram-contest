@@ -8,7 +8,7 @@ const parseColumn = rawColumn => ({
 const timeTemplate = tinytime('MM DD');
 
 class Chart {
-  constructor(rawChart, width = 1000, height = 500, paddingX = 30, paddingY = 30) {
+  constructor(rawChart, width = 1000, height = 500, paddingX = 0, paddingY = 0) {
     const columns = rawChart.columns.map(parseColumn);
     columns.forEach((column) => {
       const { min, max } = column.values.reduce((acc, value) => {
@@ -49,9 +49,9 @@ class Chart {
       const column = this.lineColumns[columnIndex];
       const distanceX = this.contentWidth / column.values.length;
       const distanceY = this.contentHeight / (column.max - column.min);
-      path.moveTo(this.paddingX, this.height - (column.values[0] * distanceY));
+      path.moveTo(this.paddingX - scrollX, this.height - (column.values[0] * distanceY));
       for (let i = 1; i < column.values.length; i++) {
-        path.lineTo(this.paddingX + (i * distanceX), this.height - (column.values[i] * distanceY));
+        path.lineTo(this.paddingX + (i * distanceX) - scrollX, this.height - (column.values[i] * distanceY));
       }
       paths.push({ path, color: column.color });
     }

@@ -24,7 +24,7 @@ const minimapYZoom = 0.1;
 
 const ctx = canvas.getContext('2d');
 Charts.dowloadCharts();
-
+ctx.lineJoin = 'round';
 const charts = Charts.charts;
 const chart = charts[0];
 
@@ -35,35 +35,57 @@ const minimap = new Minimap(canvasMinimap, chart.width, chart.height, chart.padd
 
 const xCoordPath = new Path2D();
 
-xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
-xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
+// xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
+// xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
 
-ctx.stroke(xCoordPath);
+// ctx.stroke(xCoordPath);
 
-ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
+// ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
 const chartPaths = chart.getChartPaths();
 chartPaths.forEach(({ path, color }) => {
   ctx.strokeStyle = color;
   ctx.stroke(path);
 });
 
-const scale = function(xzoom) {
-  ctx.setTransform(1, 0, 0, 1, 0, 0); // clear scale
-  ctx.scale(1 / xzoom, 1);
+let gxzoom = 1;
+let gScrollX = 0;
+
+const scale = function(xzoom, scrollX) {
+  if (scrollX || scrollX === 0) {
+    gScrollX = scrollX;
+  }
+  gxzoom = xzoom;
+  ctx.setTransform(1 / xzoom, 0, 0, 1, -gScrollX / gxzoom, 0); // clear scale
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
-  xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
+  // xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
+  // xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
+  // ctx.stroke(xCoordPath);
 
-  ctx.stroke(xCoordPath);
-
-  ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
+  // ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
   chartPaths.forEach(({ path, color }) => {
     ctx.strokeStyle = color;
     ctx.stroke(path);
   });
 };
 
+const move = function(scrollX) {
+  gScrollX = scrollX;
+  ctx.setTransform(1 / gxzoom, 0, 0, 1, -scrollX / gxzoom, 0); // clear scale
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
+  // xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
+
+  // ctx.stroke(xCoordPath);
+
+  // ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
+  chartPaths.forEach(({ path, color }) => {
+    ctx.strokeStyle = color;
+    ctx.stroke(path);
+  });
+}
+
 minimap.setChartPaths(chartPaths);
 minimap.drawMinimap();
 minimap.subscribeForZoom(scale);
+minimap.subscriberForMove(move);

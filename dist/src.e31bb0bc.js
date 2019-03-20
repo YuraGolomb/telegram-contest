@@ -566,8 +566,8 @@ function () {
   function Chart(rawChart) {
     var width = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1000;
     var height = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 500;
-    var paddingX = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 30;
-    var paddingY = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 30;
+    var paddingX = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+    var paddingY = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
 
     _classCallCheck(this, Chart);
 
@@ -621,10 +621,10 @@ function () {
         var column = this.lineColumns[columnIndex];
         var distanceX = this.contentWidth / column.values.length;
         var distanceY = this.contentHeight / (column.max - column.min);
-        path.moveTo(this.paddingX, this.height - column.values[0] * distanceY);
+        path.moveTo(this.paddingX - scrollX, this.height - column.values[0] * distanceY);
 
         for (var i = 1; i < column.values.length; i++) {
-          path.lineTo(this.paddingX + i * distanceX, this.height - column.values[i] * distanceY);
+          path.lineTo(this.paddingX + i * distanceX - scrollX, this.height - column.values[i] * distanceY);
         }
 
         paths.push({
@@ -784,10 +784,11 @@ function () {
         var newOffsetLeft = this.offsetLeft - (this.mousePosX - posX);
         this.setOffsetLeft(newOffsetLeft);
         this.drawMinimap();
+        var moveDiff = this.offsetLeft - this.paddingX;
         var perc = (this.offsetRight - this.offsetLeft) / this.contentWidth;
 
         if (this.zoomCallback) {
-          this.zoomCallback(perc);
+          this.zoomCallback(perc, moveDiff);
         }
       } else if (this.target === 'middle-right') {
         var newOffsetRight = this.offsetRight - (this.mousePosX - posX);
@@ -806,9 +807,15 @@ function () {
 
         if (_newOffsetRight > this.width - this.paddingX) {
           if (this.offsetRight < this.width - this.paddingX) {
-            var diff = this.width - this.paddingX - this.offsetRight;
+            var diff = this.offsetRight - (this.width - this.paddingX);
             this.setOffsetRight(this.width - this.paddingX);
-            this.setOffsetLeft(this.offsetLeft + diff);
+            this.setOffsetLeft(this.offsetLeft - diff);
+
+            var _moveDiff = this.offsetLeft - this.paddingX;
+
+            if (this.moveCallback) {
+              this.moveCallback(_moveDiff);
+            }
           }
         } else if (_newOffsetLeft < this.paddingX) {
           if (this.offsetLeft > this.paddingX) {
@@ -816,10 +823,18 @@ function () {
 
             this.setOffsetLeft(this.paddingX);
             this.setOffsetRight(this.offsetRight - _diff);
+
+            var _moveDiff2 = this.offsetLeft - this.paddingX;
+
+            this.moveCallback(_moveDiff2);
           }
         } else {
           this.setOffsetLeft(_newOffsetLeft);
           this.setOffsetRight(_newOffsetRight);
+
+          var _moveDiff3 = this.offsetLeft - this.paddingX;
+
+          this.moveCallback(_moveDiff3);
         }
 
         this.drawMinimap();
@@ -841,6 +856,11 @@ function () {
     key: "subscribeForZoom",
     value: function subscribeForZoom(zoomCallback) {
       this.zoomCallback = zoomCallback;
+    }
+  }, {
+    key: "subscriberForMove",
+    value: function subscriberForMove(moveCallback) {
+      this.moveCallback = moveCallback;
     }
   }, {
     key: "onDocumentMouseUp",
@@ -975,16 +995,17 @@ var ctx = canvas.getContext('2d');
 
 _Charts.default.dowloadCharts();
 
+ctx.lineJoin = 'round';
 var charts = _Charts.default.charts;
 var chart = charts[0];
 canvas.width = chart.width;
 canvas.height = chart.height;
 var minimap = new _Minimap.default(canvasMinimap, chart.width, chart.height, chart.paddingX, minimapYZoom);
-var xCoordPath = new Path2D();
-xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
-xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
-ctx.stroke(xCoordPath);
-ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
+var xCoordPath = new Path2D(); // xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
+// xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
+// ctx.stroke(xCoordPath);
+// ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
+
 var chartPaths = chart.getChartPaths();
 chartPaths.forEach(function (_ref) {
   var path = _ref.path,
@@ -992,16 +1013,22 @@ chartPaths.forEach(function (_ref) {
   ctx.strokeStyle = color;
   ctx.stroke(path);
 });
+var gxzoom = 1;
+var gScrollX = 0;
 
-var scale = function scale(xzoom) {
-  ctx.setTransform(1, 0, 0, 1, 0, 0); // clear scale
+var scale = function scale(xzoom, scrollX) {
+  if (scrollX || scrollX === 0) {
+    gScrollX = scrollX;
+  }
 
-  ctx.scale(1 / xzoom, 1);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
-  xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
-  ctx.stroke(xCoordPath);
-  ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
+  gxzoom = xzoom;
+  ctx.setTransform(1 / xzoom, 0, 0, 1, -gScrollX / gxzoom, 0); // clear scale
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height); // xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
+  // xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
+  // ctx.stroke(xCoordPath);
+  // ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
+
   chartPaths.forEach(function (_ref2) {
     var path = _ref2.path,
         color = _ref2.color;
@@ -1010,9 +1037,27 @@ var scale = function scale(xzoom) {
   });
 };
 
+var move = function move(scrollX) {
+  gScrollX = scrollX;
+  ctx.setTransform(1 / gxzoom, 0, 0, 1, -scrollX / gxzoom, 0); // clear scale
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height); // xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
+  // xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
+  // ctx.stroke(xCoordPath);
+  // ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
+
+  chartPaths.forEach(function (_ref3) {
+    var path = _ref3.path,
+        color = _ref3.color;
+    ctx.strokeStyle = color;
+    ctx.stroke(path);
+  });
+};
+
 minimap.setChartPaths(chartPaths);
 minimap.drawMinimap();
 minimap.subscribeForZoom(scale);
+minimap.subscriberForMove(move);
 },{"./index.css":"index.css","./Charts":"Charts.js","./Minimap":"Minimap.js"}],"../node_modules/parcel/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
@@ -1041,7 +1086,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "41565" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "34019" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

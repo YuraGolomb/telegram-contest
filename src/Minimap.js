@@ -79,9 +79,10 @@ class Minimap {
       const newOffsetLeft = this.offsetLeft - (this.mousePosX - posX);
       this.setOffsetLeft(newOffsetLeft);
       this.drawMinimap();
+      const moveDiff = this.offsetLeft - this.paddingX;
       const perc = (this.offsetRight - this.offsetLeft) / this.contentWidth;
       if (this.zoomCallback) {
-        this.zoomCallback(perc);
+        this.zoomCallback(perc, moveDiff);
       }
     } else if (this.target === 'middle-right') {
       const newOffsetRight = this.offsetRight - (this.mousePosX - posX);
@@ -96,19 +97,28 @@ class Minimap {
       const newOffsetLeft = this.offsetLeft - (this.mousePosX - posX);
       if (newOffsetRight > this.width - this.paddingX) {
         if (this.offsetRight < this.width - this.paddingX) {
-          const diff = (this.width - this.paddingX) - this.offsetRight;
+          const diff = this.offsetRight - (this.width - this.paddingX);
           this.setOffsetRight(this.width - this.paddingX);
-          this.setOffsetLeft(this.offsetLeft + diff);
+          this.setOffsetLeft(this.offsetLeft - diff);
+          const moveDiff = this.offsetLeft - this.paddingX;
+          if (this.moveCallback) {
+            this.moveCallback(moveDiff);
+          }
         }
       } else if (newOffsetLeft < this.paddingX) {
         if (this.offsetLeft > this.paddingX) {
           const diff = this.offsetLeft - this.paddingX;
           this.setOffsetLeft(this.paddingX);
           this.setOffsetRight(this.offsetRight - diff);
+          const moveDiff = this.offsetLeft - this.paddingX;
+
+          this.moveCallback(moveDiff);
         }
       } else {
         this.setOffsetLeft(newOffsetLeft);
         this.setOffsetRight(newOffsetRight);
+        const moveDiff = this.offsetLeft - this.paddingX;
+        this.moveCallback(moveDiff);
       }
       this.drawMinimap();
     }
@@ -129,6 +139,10 @@ class Minimap {
 
   subscribeForZoom(zoomCallback) {
     this.zoomCallback = zoomCallback;
+  }
+
+  subscriberForMove(moveCallback) {
+    this.moveCallback = moveCallback;
   }
 
   onDocumentMouseUp(e) {
