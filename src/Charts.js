@@ -6,8 +6,10 @@ class Charts {
     this.charts = [];
   }
 
-  dowloadCharts() {
-    this.charts = chartData.map(rawChart => new Chart(rawChart));
+  dowloadCharts(canvas, canvasMinimap) {
+    // this.charts = chartData.map(rawChart => new Chart(canvas, canvasMinimap, rawChart));
+    const chart = new Chart(canvas, canvasMinimap, chartData[0]);
+    this.charts = [chart];
   }
 }
 

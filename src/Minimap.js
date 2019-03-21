@@ -6,7 +6,7 @@ const cursors = {
 };
 
 class Minimap {
-  constructor(canvas, width, height, paddingX, minimapYZoom = 0.1) {
+  constructor(canvas, width, height, minimapYZoom = 0.1) {
     this.canvas = canvas;
     canvas.width = width;
     canvas.height = height * minimapYZoom;
@@ -23,13 +23,11 @@ class Minimap {
     this.mousePosX = 0;
     this.mousePosY = 0;
 
-    this.contentWidth = width - (2 * paddingX);
     this.width = width;
     this.height = height;
 
-    this.paddingX = paddingX;
-    this.offsetLeft = paddingX;
-    this.offsetRight = width - paddingX;
+    this.offsetLeft = 0;
+    this.offsetRight = width;
 
     this.setChartPaths = this.setChartPaths.bind(this);
     this.drawHidden = this.drawHidden.bind(this);
@@ -79,45 +77,45 @@ class Minimap {
       const newOffsetLeft = this.offsetLeft - (this.mousePosX - posX);
       this.setOffsetLeft(newOffsetLeft);
       this.drawMinimap();
-      const moveDiff = this.offsetLeft - this.paddingX;
-      const perc = (this.offsetRight - this.offsetLeft) / this.contentWidth;
+      const moveDiff = this.offsetLeft;
+      const perc = (this.offsetRight - this.offsetLeft) / this.width;
       if (this.zoomCallback) {
-        this.zoomCallback(perc, moveDiff);
+        this.zoomCallback(1/perc, moveDiff);
       }
     } else if (this.target === 'middle-right') {
       const newOffsetRight = this.offsetRight - (this.mousePosX - posX);
       this.setOffsetRight(newOffsetRight);
       this.drawMinimap();
-      const perc = (this.offsetRight - this.offsetLeft) / this.contentWidth;
+      const perc = (this.offsetRight - this.offsetLeft) / this.width;
       if (this.zoomCallback) {
-        this.zoomCallback(perc);
+        this.zoomCallback(1/perc);
       }
     } else if (this.target === 'left-middle-right') {
       const newOffsetRight = this.offsetRight - (this.mousePosX - posX);
       const newOffsetLeft = this.offsetLeft - (this.mousePosX - posX);
-      if (newOffsetRight > this.width - this.paddingX) {
-        if (this.offsetRight < this.width - this.paddingX) {
-          const diff = this.offsetRight - (this.width - this.paddingX);
-          this.setOffsetRight(this.width - this.paddingX);
+      if (newOffsetRight > this.width) {
+        if (this.offsetRight < this.width) {
+          const diff = this.offsetRight - (this.width);
+          this.setOffsetRight(this.width);
           this.setOffsetLeft(this.offsetLeft - diff);
-          const moveDiff = this.offsetLeft - this.paddingX;
+          const moveDiff = this.offsetLeft;
           if (this.moveCallback) {
             this.moveCallback(moveDiff);
           }
         }
-      } else if (newOffsetLeft < this.paddingX) {
-        if (this.offsetLeft > this.paddingX) {
-          const diff = this.offsetLeft - this.paddingX;
-          this.setOffsetLeft(this.paddingX);
+      } else if (newOffsetLeft < 0) {
+        if (this.offsetLeft > 0) {
+          const diff = this.offsetLeft;
+          this.setOffsetLeft(0);
           this.setOffsetRight(this.offsetRight - diff);
-          const moveDiff = this.offsetLeft - this.paddingX;
+          const moveDiff = this.offsetLeft;
 
           this.moveCallback(moveDiff);
         }
       } else {
         this.setOffsetLeft(newOffsetLeft);
         this.setOffsetRight(newOffsetRight);
-        const moveDiff = this.offsetLeft - this.paddingX;
+        const moveDiff = this.offsetLeft;
         this.moveCallback(moveDiff);
       }
       this.drawMinimap();
@@ -126,13 +124,13 @@ class Minimap {
   }
 
   setOffsetRight(offset) {
-    if (offset > this.width - this.paddingX) this.offsetRight = this.width - this.paddingX;
+    if (offset > this.width) this.offsetRight = this.width;
     else if (offset < this.offsetLeft + 20) this.offsetRight = this.offsetLeft + 20;
     else this.offsetRight = offset;
   }
 
   setOffsetLeft(offset) {
-    if (offset < this.paddingX) this.offsetLeft = this.paddingX;
+    if (offset < 0) this.offsetLeft = 0;
     else if (offset > this.offsetRight - 20) this.offsetLeft = this.offsetRight - 20;
     else this.offsetLeft = offset;
   }
@@ -173,7 +171,7 @@ class Minimap {
   }
 
   setChartPaths(chartPaths) {
-    this.chartPaths = chartPaths;
+    this.chartPaths = [...chartPaths];
   }
 
   drawMinimap() {
@@ -186,20 +184,6 @@ class Minimap {
   }
 
   drawHidden() {
-    this.leftHidden = {
-      x1: 0,
-      x2: this.offsetLeft,
-      y1: 0,
-      y2: this.height,
-    };
-
-    this.rightHidden = {
-      x1: 0,
-      x2: this.offsetLeft,
-      y1: 0,
-      y2: this.height,
-    };
-
     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
     this.ctx.fillRect(0, 0, this.offsetLeft, this.height);
     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';

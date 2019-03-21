@@ -533,7 +533,7 @@ function tinytime(template) {
 module.exports = tinytime;
 
 
-},{}],"Chart.js":[function(require,module,exports) {
+},{}],"Minimap.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -541,158 +541,13 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 
-var _tinytime = _interopRequireDefault(require("tinytime"));
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
 
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-var parseColumn = function parseColumn(rawColumn) {
-  return {
-    id: rawColumn[0],
-    values: rawColumn.slice(1)
-  };
-};
-
-var timeTemplate = (0, _tinytime.default)('MM DD');
-
-var Chart =
-/*#__PURE__*/
-function () {
-  function Chart(rawChart) {
-    var width = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1000;
-    var height = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 500;
-    var paddingX = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-    var paddingY = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
-
-    _classCallCheck(this, Chart);
-
-    var columns = rawChart.columns.map(parseColumn);
-    columns.forEach(function (column) {
-      var _column$values$reduce = column.values.reduce(function (acc, value) {
-        if (acc.min > value) acc.min = value;else if (acc.max < value) acc.max = value;
-        return acc;
-      }, {
-        min: column.values[0],
-        max: column.values[0]
-      }),
-          min = _column$values$reduce.min,
-          max = _column$values$reduce.max;
-
-      column.min = min;
-      column.max = max;
-      column.type = rawChart.types[column.id];
-
-      if (column.type !== 'x') {
-        column.name = rawChart.names[column.id];
-        column.color = rawChart.colors[column.id];
-      }
-    });
-    this.lineColumns = columns.filter(function (column) {
-      return column.type === 'line';
-    });
-    this.xColumn = columns.filter(function (column) {
-      return column.type === 'x';
-    })[0];
-    this.xColumn.values = this.xColumn.values.map(function (v) {
-      return timeTemplate.render(new Date(v));
-    });
-    this.ticks = this.xColumn.values.length;
-    this.width = width;
-    this.contentWidth = width - paddingX * 2;
-    this.paddingX = paddingX;
-    this.height = height;
-    this.contentHeight = height - paddingY * 2;
-    this.paddingY = paddingY;
-    this.getChartPaths = this.getChartPaths.bind(this);
-  }
-
-  _createClass(Chart, [{
-    key: "getChartPaths",
-    value: function getChartPaths() {
-      var paths = [];
-
-      for (var columnIndex = 0; columnIndex < this.lineColumns.length; columnIndex++) {
-        var path = new Path2D();
-        var column = this.lineColumns[columnIndex];
-        var distanceX = this.contentWidth / column.values.length;
-        var distanceY = this.contentHeight / (column.max - column.min);
-        path.moveTo(this.paddingX - scrollX, this.height - column.values[0] * distanceY);
-
-        for (var i = 1; i < column.values.length; i++) {
-          path.lineTo(this.paddingX + i * distanceX - scrollX, this.height - column.values[i] * distanceY);
-        }
-
-        paths.push({
-          path: path,
-          color: column.color
-        });
-      }
-
-      return paths;
-    }
-  }]);
-
-  return Chart;
-}();
-
-var _default = Chart;
-exports.default = _default;
-},{"tinytime":"../node_modules/tinytime/dist/tinytime.js"}],"Charts.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _chart_data = _interopRequireDefault(require("../chart_data"));
-
-var _Chart = _interopRequireDefault(require("./Chart"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-var Charts =
-/*#__PURE__*/
-function () {
-  function Charts() {
-    _classCallCheck(this, Charts);
-
-    this.charts = [];
-  }
-
-  _createClass(Charts, [{
-    key: "dowloadCharts",
-    value: function dowloadCharts() {
-      this.charts = _chart_data.default.map(function (rawChart) {
-        return new _Chart.default(rawChart);
-      });
-    }
-  }]);
-
-  return Charts;
-}();
-
-var _default = new Charts();
-
-exports.default = _default;
-},{"../chart_data":"../chart_data.js","./Chart":"Chart.js"}],"Minimap.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -710,8 +565,8 @@ var cursors = {
 var Minimap =
 /*#__PURE__*/
 function () {
-  function Minimap(canvas, width, height, paddingX) {
-    var minimapYZoom = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0.1;
+  function Minimap(canvas, width, height) {
+    var minimapYZoom = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0.1;
 
     _classCallCheck(this, Minimap);
 
@@ -728,12 +583,10 @@ function () {
 
     this.mousePosX = 0;
     this.mousePosY = 0;
-    this.contentWidth = width - 2 * paddingX;
     this.width = width;
     this.height = height;
-    this.paddingX = paddingX;
-    this.offsetLeft = paddingX;
-    this.offsetRight = width - paddingX;
+    this.offsetLeft = 0;
+    this.offsetRight = width;
     this.setChartPaths = this.setChartPaths.bind(this);
     this.drawHidden = this.drawHidden.bind(this);
     this.onMouseMove = this.onMouseMove.bind(this);
@@ -784,56 +637,50 @@ function () {
         var newOffsetLeft = this.offsetLeft - (this.mousePosX - posX);
         this.setOffsetLeft(newOffsetLeft);
         this.drawMinimap();
-        var moveDiff = this.offsetLeft - this.paddingX;
-        var perc = (this.offsetRight - this.offsetLeft) / this.contentWidth;
+        var moveDiff = this.offsetLeft;
+        var perc = (this.offsetRight - this.offsetLeft) / this.width;
 
         if (this.zoomCallback) {
-          this.zoomCallback(perc, moveDiff);
+          this.zoomCallback(1 / perc, moveDiff);
         }
       } else if (this.target === 'middle-right') {
         var newOffsetRight = this.offsetRight - (this.mousePosX - posX);
         this.setOffsetRight(newOffsetRight);
         this.drawMinimap();
 
-        var _perc = (this.offsetRight - this.offsetLeft) / this.contentWidth;
+        var _perc = (this.offsetRight - this.offsetLeft) / this.width;
 
         if (this.zoomCallback) {
-          this.zoomCallback(_perc);
+          this.zoomCallback(1 / _perc);
         }
       } else if (this.target === 'left-middle-right') {
         var _newOffsetRight = this.offsetRight - (this.mousePosX - posX);
 
         var _newOffsetLeft = this.offsetLeft - (this.mousePosX - posX);
 
-        if (_newOffsetRight > this.width - this.paddingX) {
-          if (this.offsetRight < this.width - this.paddingX) {
-            var diff = this.offsetRight - (this.width - this.paddingX);
-            this.setOffsetRight(this.width - this.paddingX);
+        if (_newOffsetRight > this.width) {
+          if (this.offsetRight < this.width) {
+            var diff = this.offsetRight - this.width;
+            this.setOffsetRight(this.width);
             this.setOffsetLeft(this.offsetLeft - diff);
-
-            var _moveDiff = this.offsetLeft - this.paddingX;
+            var _moveDiff = this.offsetLeft;
 
             if (this.moveCallback) {
               this.moveCallback(_moveDiff);
             }
           }
-        } else if (_newOffsetLeft < this.paddingX) {
-          if (this.offsetLeft > this.paddingX) {
-            var _diff = this.offsetLeft - this.paddingX;
-
-            this.setOffsetLeft(this.paddingX);
+        } else if (_newOffsetLeft < 0) {
+          if (this.offsetLeft > 0) {
+            var _diff = this.offsetLeft;
+            this.setOffsetLeft(0);
             this.setOffsetRight(this.offsetRight - _diff);
-
-            var _moveDiff2 = this.offsetLeft - this.paddingX;
-
+            var _moveDiff2 = this.offsetLeft;
             this.moveCallback(_moveDiff2);
           }
         } else {
           this.setOffsetLeft(_newOffsetLeft);
           this.setOffsetRight(_newOffsetRight);
-
-          var _moveDiff3 = this.offsetLeft - this.paddingX;
-
+          var _moveDiff3 = this.offsetLeft;
           this.moveCallback(_moveDiff3);
         }
 
@@ -845,12 +692,12 @@ function () {
   }, {
     key: "setOffsetRight",
     value: function setOffsetRight(offset) {
-      if (offset > this.width - this.paddingX) this.offsetRight = this.width - this.paddingX;else if (offset < this.offsetLeft + 20) this.offsetRight = this.offsetLeft + 20;else this.offsetRight = offset;
+      if (offset > this.width) this.offsetRight = this.width;else if (offset < this.offsetLeft + 20) this.offsetRight = this.offsetLeft + 20;else this.offsetRight = offset;
     }
   }, {
     key: "setOffsetLeft",
     value: function setOffsetLeft(offset) {
-      if (offset < this.paddingX) this.offsetLeft = this.paddingX;else if (offset > this.offsetRight - 20) this.offsetLeft = this.offsetRight - 20;else this.offsetLeft = offset;
+      if (offset < 0) this.offsetLeft = 0;else if (offset > this.offsetRight - 20) this.offsetLeft = this.offsetRight - 20;else this.offsetLeft = offset;
     }
   }, {
     key: "subscribeForZoom",
@@ -892,7 +739,7 @@ function () {
   }, {
     key: "setChartPaths",
     value: function setChartPaths(chartPaths) {
-      this.chartPaths = chartPaths;
+      this.chartPaths = _toConsumableArray(chartPaths);
     }
   }, {
     key: "drawMinimap",
@@ -912,18 +759,6 @@ function () {
   }, {
     key: "drawHidden",
     value: function drawHidden() {
-      this.leftHidden = {
-        x1: 0,
-        x2: this.offsetLeft,
-        y1: 0,
-        y2: this.height
-      };
-      this.rightHidden = {
-        x1: 0,
-        x2: this.offsetLeft,
-        y1: 0,
-        y2: this.height
-      };
       this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
       this.ctx.fillRect(0, 0, this.offsetLeft, this.height);
       this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
@@ -962,103 +797,277 @@ function () {
 
 var _default = Minimap;
 exports.default = _default;
-},{}],"index.js":[function(require,module,exports) {
+},{}],"Chart.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _tinytime = _interopRequireDefault(require("tinytime"));
+
+var _Minimap = _interopRequireDefault(require("./Minimap"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var parseColumn = function parseColumn(rawColumn) {
+  return {
+    id: rawColumn[0],
+    values: rawColumn.slice(1)
+  };
+};
+
+var timeTemplate = (0, _tinytime.default)('MM DD');
+
+var Chart =
+/*#__PURE__*/
+function () {
+  function Chart(canvas, canvasMinimap, rawChart) {
+    var width = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1000;
+    var height = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 500;
+
+    _classCallCheck(this, Chart);
+
+    this.ctx = canvas.getContext('2d');
+    canvas.width = width;
+    canvas.height = height;
+    var columns = rawChart.columns.map(parseColumn);
+    columns.forEach(function (column) {
+      var _column$values$reduce = column.values.reduce(function (acc, value) {
+        if (acc.min > value) acc.min = value;else if (acc.max < value) acc.max = value;
+        return acc;
+      }, {
+        min: column.values[0],
+        max: column.values[0]
+      }),
+          min = _column$values$reduce.min,
+          max = _column$values$reduce.max;
+
+      column.min = min;
+      column.max = max;
+      column.type = rawChart.types[column.id];
+
+      if (column.type !== 'x') {
+        column.name = rawChart.names[column.id];
+        column.color = rawChart.colors[column.id];
+      }
+    });
+    this.heightAnim = {
+      isRunning: false,
+      from: 0,
+      current: 0,
+      to: 0,
+      step: 1
+    };
+    this.lineColumns = columns.filter(function (column) {
+      return column.type === 'line';
+    });
+    this.xColumn = columns.filter(function (column) {
+      return column.type === 'x';
+    })[0];
+    this.xColumn.values = this.xColumn.values.map(function (v) {
+      return timeTemplate.render(new Date(v));
+    });
+    this.ticks = this.xColumn.values.length - 1;
+    this.width = width;
+    this.height = height;
+    this.getChartPaths = this.getChartPaths.bind(this);
+    this.scale = this.scale.bind(this);
+    this.move = this.move.bind(this);
+    this.xzoom = 1;
+    this.scrollx = 0;
+    this.getChartPaths();
+    this.minimap = new _Minimap.default(canvasMinimap, this.width, this.height, 0.1);
+    this.minimap.setChartPaths(this.chartPaths);
+    this.minimap.drawMinimap();
+    this.minimap.subscribeForZoom(this.scale);
+    this.minimap.subscriberForMove(this.move);
+    this.drawChart();
+  }
+
+  _createClass(Chart, [{
+    key: "getPeak",
+    value: function getPeak() {
+      var from = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+      var count = arguments.length > 1 ? arguments[1] : undefined;
+      var part = arguments.length > 2 ? arguments[2] : undefined;
+      var max = -Infinity;
+      var to = Math.ceil(from + count + part);
+
+      for (var i = from; i <= to; i++) {
+        for (var j = 0; j < this.lineColumns.length; j++) {
+          if (this.lineColumns[j].values[i] > max) max = this.lineColumns[j].values[i];
+        }
+      } // for (let j = 0; j < this.lineColumns.length -1; j++) {
+      //   const height = (this.lineColumns[j].values[to] - this.lineColumns[j].values[to - 1]) * part + this.lineColumns[j].values[to - 1];
+      //   console.log(this.lineColumns[j].values[to - 1], this.lineColumns[j].values[to])
+      //   console.log(part, height, max)
+      //   console.log('=-=-=-=-=-=-=-=-=-=-=-')
+      //   if (height > max) max = height;
+      // }
+
+
+      return max;
+    }
+  }, {
+    key: "updatePeak",
+    value: function updatePeak(peak) {
+      var newPeak;
+
+      if (peak === this.heightAnim.from) {
+        if (peak < this.heightAnim.to) {
+          newPeak = peak + this.heightAnim.step;
+
+          if (newPeak >= this.heightAnim.to) {
+            this.heightAnim.isRunning = false;
+            this.heightAnim.from = newPeak;
+          }
+
+          this.heightAnim.current = newPeak;
+        } else {
+          this.heightAnim.isRunning = false;
+        }
+      }
+    }
+  }, {
+    key: "getChartPaths",
+    value: function getChartPaths() {
+      var paths = [];
+      var offsetLeft = this.scrollx * this.xzoom;
+      var countOfTicks = this.ticks / this.xzoom;
+      var distanceX = this.width / countOfTicks;
+      var ticksToSkip = Math.floor(offsetLeft / distanceX);
+      var peak = this.getPeak(ticksToSkip, countOfTicks, offsetLeft / distanceX % 1);
+      var distanceY = this.height / peak;
+      this.updatePeak(peak);
+
+      for (var columnIndex = 0; columnIndex < this.lineColumns.length; columnIndex++) {
+        var path = new Path2D();
+        var column = this.lineColumns[columnIndex];
+        path.moveTo(0, this.height - column.values[0] * distanceY);
+
+        for (var i = 1; i <= this.ticks; i++) {
+          var x = i * distanceX;
+          var y = this.height - column.values[i] * distanceY;
+          path.lineTo(x, y);
+        }
+
+        paths.push({
+          path: path,
+          color: column.color
+        });
+      }
+
+      this.chartPaths = paths;
+      return paths;
+    }
+  }, {
+    key: "drawChart",
+    value: function drawChart() {
+      var _this = this;
+
+      this.ctx.clearRect(0, 0, this.width * this.xzoom, this.height);
+      this.chartPaths.forEach(function (_ref) {
+        var path = _ref.path,
+            color = _ref.color;
+        _this.ctx.strokeStyle = color;
+
+        _this.ctx.stroke(path);
+      });
+    }
+  }, {
+    key: "scale",
+    value: function scale(xzoom, scrollx) {
+      if (scrollx || scrollx === 0) {
+        this.scrollx = scrollx;
+      }
+
+      this.xzoom = xzoom;
+      this.ctx.clearRect(0, 0, this.width * xzoom, this.height);
+      this.ctx.setTransform(1, 0, 0, 1, -scrollx * this.xzoom, 0);
+      this.getChartPaths();
+      this.drawChart();
+    }
+  }, {
+    key: "move",
+    value: function move(scrollx) {
+      this.scrollx = scrollx;
+      this.ctx.setTransform(1, 0, 0, 1, -scrollx * this.xzoom, 0);
+      this.getChartPaths();
+      this.drawChart();
+    }
+  }]);
+
+  return Chart;
+}();
+
+var _default = Chart;
+exports.default = _default;
+},{"tinytime":"../node_modules/tinytime/dist/tinytime.js","./Minimap":"Minimap.js"}],"Charts.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _chart_data = _interopRequireDefault(require("../chart_data"));
+
+var _Chart = _interopRequireDefault(require("./Chart"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var Charts =
+/*#__PURE__*/
+function () {
+  function Charts() {
+    _classCallCheck(this, Charts);
+
+    this.charts = [];
+  }
+
+  _createClass(Charts, [{
+    key: "dowloadCharts",
+    value: function dowloadCharts(canvas, canvasMinimap) {
+      // this.charts = chartData.map(rawChart => new Chart(canvas, canvasMinimap, rawChart));
+      var chart = new _Chart.default(canvas, canvasMinimap, _chart_data.default[0]);
+      this.charts = [chart];
+    }
+  }]);
+
+  return Charts;
+}();
+
+var _default = new Charts();
+
+exports.default = _default;
+},{"../chart_data":"../chart_data.js","./Chart":"Chart.js"}],"index.js":[function(require,module,exports) {
 "use strict";
 
 require("./index.css");
 
 var _Charts = _interopRequireDefault(require("./Charts"));
 
-var _Minimap = _interopRequireDefault(require("./Minimap"));
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var drawSeparatorsX = function drawSeparatorsX(x, y, count, width) {
-  var path = new Path2D();
-  var distance = width / (count - 1);
-  var y1 = y - 5;
-  var y2 = y + 5;
-
-  for (var i = 0; i < count; i++) {
-    var xx = x + i * distance;
-    path.moveTo(xx, y1);
-    path.lineTo(xx, y2);
-  }
-
-  return path;
-};
 
 var canvas = document.getElementById('chart');
 var canvasMinimap = document.getElementById('chart-minimap');
-var minimapYZoom = 0.1;
-var ctx = canvas.getContext('2d');
 
-_Charts.default.dowloadCharts();
-
-ctx.lineJoin = 'round';
-var charts = _Charts.default.charts;
-var chart = charts[0];
-canvas.width = chart.width;
-canvas.height = chart.height;
-var minimap = new _Minimap.default(canvasMinimap, chart.width, chart.height, chart.paddingX, minimapYZoom);
-var xCoordPath = new Path2D(); // xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
-// xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
-// ctx.stroke(xCoordPath);
-// ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
-
-var chartPaths = chart.getChartPaths();
-chartPaths.forEach(function (_ref) {
-  var path = _ref.path,
-      color = _ref.color;
-  ctx.strokeStyle = color;
-  ctx.stroke(path);
-});
-var gxzoom = 1;
-var gScrollX = 0;
-
-var scale = function scale(xzoom, scrollX) {
-  if (scrollX || scrollX === 0) {
-    gScrollX = scrollX;
-  }
-
-  gxzoom = xzoom;
-  ctx.setTransform(1 / xzoom, 0, 0, 1, -gScrollX / gxzoom, 0); // clear scale
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height); // xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
-  // xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
-  // ctx.stroke(xCoordPath);
-  // ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
-
-  chartPaths.forEach(function (_ref2) {
-    var path = _ref2.path,
-        color = _ref2.color;
-    ctx.strokeStyle = color;
-    ctx.stroke(path);
-  });
-};
-
-var move = function move(scrollX) {
-  gScrollX = scrollX;
-  ctx.setTransform(1 / gxzoom, 0, 0, 1, -scrollX / gxzoom, 0); // clear scale
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height); // xCoordPath.moveTo(chart.paddingX, chart.height - chart.paddingY);
-  // xCoordPath.lineTo(chart.width - chart.paddingX, chart.height - chart.paddingY);
-  // ctx.stroke(xCoordPath);
-  // ctx.stroke(drawSeparatorsX(chart.paddingX, chart.height - chart.paddingY, chart.ticks, chart.contentWidth));
-
-  chartPaths.forEach(function (_ref3) {
-    var path = _ref3.path,
-        color = _ref3.color;
-    ctx.strokeStyle = color;
-    ctx.stroke(path);
-  });
-};
-
-minimap.setChartPaths(chartPaths);
-minimap.drawMinimap();
-minimap.subscribeForZoom(scale);
-minimap.subscriberForMove(move);
-},{"./index.css":"index.css","./Charts":"Charts.js","./Minimap":"Minimap.js"}],"../node_modules/parcel/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+_Charts.default.dowloadCharts(canvas, canvasMinimap);
+},{"./index.css":"index.css","./Charts":"Charts.js"}],"../node_modules/parcel/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -1086,7 +1095,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "34019" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "43379" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
