@@ -881,9 +881,10 @@ function () {
     this.getChartPaths = this.getChartPaths.bind(this);
     this.scale = this.scale.bind(this);
     this.move = this.move.bind(this);
+    this.nextFrame = this.nextFrame.bind(this);
     this.xzoom = 1;
     this.scrollx = 0;
-    this.getChartPaths();
+    this.getChartPaths(true);
     this.minimap = new _Minimap.default(canvasMinimap, this.width, this.height, 0.1);
     this.minimap.setChartPaths(this.chartPaths);
     this.minimap.drawMinimap();
@@ -901,52 +902,78 @@ function () {
       var max = -Infinity;
       var to = Math.ceil(from + count + part);
 
-      for (var i = from; i <= to; i++) {
+      for (var i = from; i < to; i++) {
         for (var j = 0; j < this.lineColumns.length; j++) {
           if (this.lineColumns[j].values[i] > max) max = this.lineColumns[j].values[i];
         }
-      } // for (let j = 0; j < this.lineColumns.length -1; j++) {
-      //   const height = (this.lineColumns[j].values[to] - this.lineColumns[j].values[to - 1]) * part + this.lineColumns[j].values[to - 1];
-      //   console.log(this.lineColumns[j].values[to - 1], this.lineColumns[j].values[to])
-      //   console.log(part, height, max)
-      //   console.log('=-=-=-=-=-=-=-=-=-=-=-')
-      //   if (height > max) max = height;
-      // }
+      }
 
+      for (var _j = 0; _j < this.lineColumns.length - 1; _j++) {
+        var height = (this.lineColumns[_j].values[to] - this.lineColumns[_j].values[to - 1]) * part + this.lineColumns[_j].values[to - 1];
+        if (height > max) max = height;
+      }
 
       return max;
     }
   }, {
     key: "updatePeak",
     value: function updatePeak(peak) {
-      var newPeak;
+      var newCurrent;
 
-      if (peak === this.heightAnim.from) {
-        if (peak < this.heightAnim.to) {
-          newPeak = peak + this.heightAnim.step;
+      if (peak === this.heightAnim.to) {
+        if (this.heightAnim.current < this.heightAnim.to && this.heightAnim.step > 0 || this.heightAnim.current > this.heightAnim.to && this.heightAnim.step < 0) {
+          newCurrent = this.heightAnim.current + this.heightAnim.step;
 
-          if (newPeak >= this.heightAnim.to) {
+          if (newCurrent >= this.heightAnim.to && this.heightAnim.step > 0 || newCurrent <= this.heightAnim.to && this.heightAnim.step < 0) {
             this.heightAnim.isRunning = false;
-            this.heightAnim.from = newPeak;
+            this.heightAnim.current = this.heightAnim.to;
           }
 
-          this.heightAnim.current = newPeak;
+          this.heightAnim.current = newCurrent;
         } else {
+          this.heightAnim.current = this.heightAnim.to;
           this.heightAnim.isRunning = false;
         }
+      } else {
+        var from = this.heightAnim.current;
+        var to = peak;
+        var staticStep = peak * 0.0005;
+        var dynamicStep = (peak - this.heightAnim.current) * 0.01;
+        var step = staticStep + dynamicStep;
+        var current = from;
+        var isRunning = true;
+        this.heightAnim = {
+          from: from,
+          to: to,
+          step: step,
+          current: current,
+          isRunning: isRunning
+        };
       }
     }
   }, {
+    key: "nextFrame",
+    value: function nextFrame() {
+      this.getChartPaths();
+      this.drawChart();
+    }
+  }, {
     key: "getChartPaths",
-    value: function getChartPaths() {
+    value: function getChartPaths(init) {
       var paths = [];
       var offsetLeft = this.scrollx * this.xzoom;
       var countOfTicks = this.ticks / this.xzoom;
       var distanceX = this.width / countOfTicks;
       var ticksToSkip = Math.floor(offsetLeft / distanceX);
       var peak = this.getPeak(ticksToSkip, countOfTicks, offsetLeft / distanceX % 1);
-      var distanceY = this.height / peak;
       this.updatePeak(peak);
+
+      if (this.heightAnim.isRunning) {
+        window.requestAnimationFrame(this.nextFrame);
+      }
+
+      if (init) this.heightAnim.current = this.heightAnim.to;
+      var distanceY = this.height / this.heightAnim.current;
 
       for (var columnIndex = 0; columnIndex < this.lineColumns.length; columnIndex++) {
         var path = new Path2D();
@@ -973,7 +1000,7 @@ function () {
     value: function drawChart() {
       var _this = this;
 
-      this.ctx.clearRect(0, 0, this.width * this.xzoom, this.height);
+      this.ctx.clearRect(0, 0, this.width * this.xzoom * 10, this.height);
       this.chartPaths.forEach(function (_ref) {
         var path = _ref.path,
             color = _ref.color;
@@ -991,7 +1018,7 @@ function () {
 
       this.xzoom = xzoom;
       this.ctx.clearRect(0, 0, this.width * xzoom, this.height);
-      this.ctx.setTransform(1, 0, 0, 1, -scrollx * this.xzoom, 0);
+      this.ctx.setTransform(1, 0, 0, 1, -this.scrollx * this.xzoom, 0);
       this.getChartPaths();
       this.drawChart();
     }
@@ -999,7 +1026,8 @@ function () {
     key: "move",
     value: function move(scrollx) {
       this.scrollx = scrollx;
-      this.ctx.setTransform(1, 0, 0, 1, -scrollx * this.xzoom, 0);
+      this.ctx.clearRect(0, 0, this.width * this.xzoom, this.height);
+      this.ctx.setTransform(1, 0, 0, 1, -this.scrollx * this.xzoom, 0);
       this.getChartPaths();
       this.drawChart();
     }
@@ -1043,7 +1071,7 @@ function () {
     key: "dowloadCharts",
     value: function dowloadCharts(canvas, canvasMinimap) {
       // this.charts = chartData.map(rawChart => new Chart(canvas, canvasMinimap, rawChart));
-      var chart = new _Chart.default(canvas, canvasMinimap, _chart_data.default[0]);
+      var chart = new _Chart.default(canvas, canvasMinimap, _chart_data.default[4]);
       this.charts = [chart];
     }
   }]);
@@ -1095,7 +1123,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "43379" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "34273" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

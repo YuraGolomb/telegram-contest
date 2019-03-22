@@ -50,10 +50,11 @@ class Chart {
     this.getChartPaths = this.getChartPaths.bind(this);
     this.scale = this.scale.bind(this);
     this.move = this.move.bind(this);
+    this.nextFrame = this.nextFrame.bind(this);
 
     this.xzoom = 1;
     this.scrollx = 0;
-    this.getChartPaths();
+    this.getChartPaths(true);
     this.minimap = new Minimap(canvasMinimap, this.width, this.height, 0.1);
     this.minimap.setChartPaths(this.chartPaths);
     this.minimap.drawMinimap();
@@ -65,49 +66,73 @@ class Chart {
   getPeak(from = 0, count, part) {
     let max = -Infinity;
     const to = Math.ceil(from + count + part);
-    for (let i = from; i <= to; i++) {
+    for (let i = from; i < to; i++) {
       for (let j = 0; j < this.lineColumns.length; j++) {
         if (this.lineColumns[j].values[i] > max) max = this.lineColumns[j].values[i];
       }
     }
 
-    // for (let j = 0; j < this.lineColumns.length -1; j++) {
-
-    //   const height = (this.lineColumns[j].values[to] - this.lineColumns[j].values[to - 1]) * part + this.lineColumns[j].values[to - 1];
-    //   console.log(this.lineColumns[j].values[to - 1], this.lineColumns[j].values[to])
-    //   console.log(part, height, max)
-    //   console.log('=-=-=-=-=-=-=-=-=-=-=-')
-    //   if (height > max) max = height;
-    // }
+    for (let j = 0; j < this.lineColumns.length -1; j++) {
+      const height = (this.lineColumns[j].values[to] - this.lineColumns[j].values[to - 1]) * part + this.lineColumns[j].values[to - 1];
+      if (height > max) max = height;
+    }
     return max;
   }
 
   updatePeak(peak) {
-    let newPeak;
-    if (peak === this.heightAnim.from) {
-      if (peak < this.heightAnim.to) {
-        newPeak = peak + this.heightAnim.step;
-        if (newPeak >= this.heightAnim.to) {
+    let newCurrent;
+    if (peak === this.heightAnim.to) {
+      if (((this.heightAnim.current < this.heightAnim.to) && this.heightAnim.step > 0) ||
+          ((this.heightAnim.current > this.heightAnim.to) && this.heightAnim.step < 0)) {
+        newCurrent = this.heightAnim.current + this.heightAnim.step;
+        if ((newCurrent >= this.heightAnim.to && this.heightAnim.step > 0) ||
+            (newCurrent <= this.heightAnim.to && this.heightAnim.step < 0)) {
           this.heightAnim.isRunning = false;
-          this.heightAnim.from = newPeak;
+          this.heightAnim.current = this.heightAnim.to;
         }
-        this.heightAnim.current = newPeak;
+        this.heightAnim.current = newCurrent;
       } else {
+        this.heightAnim.current = this.heightAnim.to;
         this.heightAnim.isRunning = false;
       }
+    } else {
+      const from = this.heightAnim.current;
+      const to = peak;
+      const staticStep = peak * 0.0005;
+      const dynamicStep = (peak - this.heightAnim.current) * 0.01;
+      const step = staticStep + dynamicStep;
+      const current = from;
+      const isRunning = true;
+      this.heightAnim = {
+        from,
+        to,
+        step,
+        current,
+        isRunning,
+      };
     }
   }
 
+  nextFrame() {
+    this.getChartPaths();
+    this.drawChart();
+  }
 
-  getChartPaths() {
+
+  getChartPaths(init) {
+
     const paths = [];
     const offsetLeft = this.scrollx * this.xzoom;
     const countOfTicks = this.ticks / this.xzoom;
     const distanceX = this.width / countOfTicks;
     const ticksToSkip = Math.floor(offsetLeft / distanceX);
     const peak = this.getPeak(ticksToSkip, countOfTicks, (((offsetLeft / distanceX)%1)));
-    const distanceY = this.height / peak;
     this.updatePeak(peak);
+    if (this.heightAnim.isRunning) {
+      window.requestAnimationFrame(this.nextFrame);
+    }
+    if (init) this.heightAnim.current = this.heightAnim.to;
+    const distanceY = this.height / this.heightAnim.current;
 
     for (let columnIndex = 0; columnIndex < this.lineColumns.length; columnIndex++) {
       const path = new Path2D();
@@ -126,7 +151,7 @@ class Chart {
   }
 
   drawChart() {
-    this.ctx.clearRect(0, 0, this.width * this.xzoom, this.height);
+    this.ctx.clearRect(0, 0, this.width * this.xzoom * 10, this.height);
     this.chartPaths.forEach(({ path, color }) => {
       this.ctx.strokeStyle = color;
       this.ctx.stroke(path);
@@ -139,14 +164,15 @@ class Chart {
     }
     this.xzoom = xzoom;
     this.ctx.clearRect(0, 0, this.width * xzoom, this.height);
-    this.ctx.setTransform(1, 0, 0, 1, -scrollx * this.xzoom, 0);
+    this.ctx.setTransform(1, 0, 0, 1, -this.scrollx * this.xzoom, 0);
     this.getChartPaths();
     this.drawChart();
   }
 
   move(scrollx) {
     this.scrollx = scrollx;
-    this.ctx.setTransform(1, 0, 0, 1, -scrollx * this.xzoom, 0);
+    this.ctx.clearRect(0, 0, this.width * this.xzoom, this.height);
+    this.ctx.setTransform(1, 0, 0, 1, -this.scrollx * this.xzoom, 0);
     this.getChartPaths();
     this.drawChart();
   }

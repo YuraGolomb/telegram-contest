@@ -8,7 +8,7 @@ class Charts {
 
   dowloadCharts(canvas, canvasMinimap) {
     // this.charts = chartData.map(rawChart => new Chart(canvas, canvasMinimap, rawChart));
-    const chart = new Chart(canvas, canvasMinimap, chartData[0]);
+    const chart = new Chart(canvas, canvasMinimap, chartData[4]);
     this.charts = [chart];
   }
 }
