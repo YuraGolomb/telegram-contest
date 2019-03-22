@@ -1,5 +1,6 @@
 import tinytime from 'tinytime';
 import Minimap from './Minimap';
+import Yscale from './Yscale';
 
 const parseColumn = rawColumn => ({
   id: rawColumn[0],
@@ -13,6 +14,8 @@ class Chart {
     this.ctx = canvas.getContext('2d');
     canvas.width = width;
     canvas.height = height;
+    canvas.style.position = 'absolute';
+    canvas.style.bottom = '0';
     const columns = rawChart.columns.map(parseColumn);
     columns.forEach((column) => {
       const { min, max } = column.values.reduce((acc, value) => {
@@ -37,6 +40,11 @@ class Chart {
       to: 0,
       step: 1,
     };
+    const chartContainer = document.getElementById('chart-container');
+    chartContainer.style.width = `${width}px`;
+    chartContainer.style.height = `${height + 15}px`;
+    chartContainer.style.position = 'relative';
+    this.yscale = new Yscale(height, width);
 
     this.lineColumns = columns.filter(column => column.type === 'line');
 
@@ -60,7 +68,7 @@ class Chart {
     this.minimap.drawMinimap();
     this.minimap.subscribeForZoom(this.scale);
     this.minimap.subscriberForMove(this.move);
-    this.drawChart();
+    // this.drawChart();
   }
 
   getPeak(from = 0, count, part) {
@@ -120,7 +128,6 @@ class Chart {
 
 
   getChartPaths(init) {
-
     const paths = [];
     const offsetLeft = this.scrollx * this.xzoom;
     const countOfTicks = this.ticks / this.xzoom;
@@ -151,6 +158,7 @@ class Chart {
   }
 
   drawChart() {
+    this.yscale.generateTicks(this.heightAnim.current)
     this.ctx.clearRect(0, 0, this.width * this.xzoom * 10, this.height);
     this.chartPaths.forEach(({ path, color }) => {
       this.ctx.strokeStyle = color;

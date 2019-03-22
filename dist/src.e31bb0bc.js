@@ -797,6 +797,147 @@ function () {
 
 var _default = Minimap;
 exports.default = _default;
+},{}],"Yscale.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var throttle = function throttle(func, limit) {
+  var lastFunc;
+  var lastRan;
+  return function () {
+    var context = this;
+    var args = arguments;
+
+    if (!lastRan) {
+      func.apply(context, args);
+      lastRan = Date.now();
+    } else {
+      clearTimeout(lastFunc);
+      lastFunc = setTimeout(function () {
+        if (Date.now() - lastRan >= limit) {
+          func.apply(context, args);
+          lastRan = Date.now();
+        }
+      }, limit - (Date.now() - lastRan));
+    }
+  };
+};
+
+var Yscale =
+/*#__PURE__*/
+function () {
+  function Yscale(height, width) {
+    _classCallCheck(this, Yscale);
+
+    var chartContainer = document.getElementById('chart-container');
+    var base = document.createElement('div');
+    base.style.position = 'absolute';
+    base.style.top = 0;
+    base.style.left = 0;
+    base.style.width = '100%';
+    base.style.height = '100%';
+    this.textSize = 14;
+    this.base = base;
+    this.oldBase = null;
+    this.height = height;
+    this.width = width;
+    this.widthStr = "".concat(width, "px");
+    this.heightTick = height / 5;
+    this.currentTicks = [];
+    this.previousTicks = [];
+    chartContainer.append(base);
+    this.generateTicks = throttle(this.generateTicks, 1000);
+  }
+
+  _createClass(Yscale, [{
+    key: "removeElem",
+    value: function removeElem(elem) {
+      elem.style.transition = '1s';
+      var topStr = elem.style.top;
+      var topNum = +topStr.slice(0, topStr.length - 2);
+      elem.style.top = "".concat(topNum + this.heightTick / 2, "px");
+      elem.style.opacity = 0.2;
+      setTimeout(function () {
+        return elem.remove();
+      }, 1000);
+    }
+  }, {
+    key: "removeBase",
+    value: function removeBase() {
+      if (!this.oldBase) return;
+      this.oldBase.style.opacity = '1s';
+      this.oldBase.style.top = "".concat(this.height, "px");
+    }
+  }, {
+    key: "generateTicks",
+    value: function generateTicks(peak) {
+      var _this = this;
+
+      if (!peak) return;
+      this.previousTicks = this.currentTicks; //.forEach(el => removeElem(el));
+
+      if (this.currentTicks[0] && this.currentTicks[0].textContent === String(Math.round(peak))) {
+        return;
+      }
+
+      this.previousTicks.forEach(function (el) {
+        return _this.removeElem(el);
+      });
+      this.peak = peak;
+      this.currentTicks = [];
+      this.createTickElem({
+        text: String(Math.round(this.peak)),
+        marginTop: '0px'
+      });
+
+      for (var i = 0; i < 5; i++) {
+        var j = 5 - i;
+        this.createTickElem({
+          text: String(Math.round(this.peak / 5 * i)),
+          marginTop: "".concat(this.heightTick * j, "px")
+        });
+      }
+    }
+  }, {
+    key: "createTickElem",
+    value: function createTickElem(_ref) {
+      var text = _ref.text,
+          marginTop = _ref.marginTop;
+      var tick = document.createElement('div');
+      tick.style.position = 'absolute';
+      tick.style.top = marginTop;
+      tick.style.width = this.widthStr;
+      var tickText = document.createElement('div');
+      tickText.textContent = text;
+      tickText.style.color = 'gray';
+      tickText.style.lineHeight = '14px';
+      tickText.style.fontSize = '14px';
+      tick.append(tickText);
+      var tickLine = document.createElement('div');
+      tickLine.style.height = '1px';
+      tickLine.style.width = '100%';
+      tickLine.style.backgroundColor = 'rgba(128, 128, 128, 0.18)';
+      tick.append(tickLine);
+      this.base.append(tick);
+      this.currentTicks.push(tick);
+    }
+  }]);
+
+  return Yscale;
+}();
+
+var _default = Yscale;
+exports.default = _default;
 },{}],"Chart.js":[function(require,module,exports) {
 "use strict";
 
@@ -808,6 +949,8 @@ exports.default = void 0;
 var _tinytime = _interopRequireDefault(require("tinytime"));
 
 var _Minimap = _interopRequireDefault(require("./Minimap"));
+
+var _Yscale = _interopRequireDefault(require("./Yscale"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -838,6 +981,8 @@ function () {
     this.ctx = canvas.getContext('2d');
     canvas.width = width;
     canvas.height = height;
+    canvas.style.position = 'absolute';
+    canvas.style.bottom = '0';
     var columns = rawChart.columns.map(parseColumn);
     columns.forEach(function (column) {
       var _column$values$reduce = column.values.reduce(function (acc, value) {
@@ -866,6 +1011,11 @@ function () {
       to: 0,
       step: 1
     };
+    var chartContainer = document.getElementById('chart-container');
+    chartContainer.style.width = "".concat(width, "px");
+    chartContainer.style.height = "".concat(height + 15, "px");
+    chartContainer.style.position = 'relative';
+    this.yscale = new _Yscale.default(height, width);
     this.lineColumns = columns.filter(function (column) {
       return column.type === 'line';
     });
@@ -889,8 +1039,7 @@ function () {
     this.minimap.setChartPaths(this.chartPaths);
     this.minimap.drawMinimap();
     this.minimap.subscribeForZoom(this.scale);
-    this.minimap.subscriberForMove(this.move);
-    this.drawChart();
+    this.minimap.subscriberForMove(this.move); // this.drawChart();
   }
 
   _createClass(Chart, [{
@@ -1000,6 +1149,7 @@ function () {
     value: function drawChart() {
       var _this = this;
 
+      this.yscale.generateTicks(this.heightAnim.current);
       this.ctx.clearRect(0, 0, this.width * this.xzoom * 10, this.height);
       this.chartPaths.forEach(function (_ref) {
         var path = _ref.path,
@@ -1038,7 +1188,7 @@ function () {
 
 var _default = Chart;
 exports.default = _default;
-},{"tinytime":"../node_modules/tinytime/dist/tinytime.js","./Minimap":"Minimap.js"}],"Charts.js":[function(require,module,exports) {
+},{"tinytime":"../node_modules/tinytime/dist/tinytime.js","./Minimap":"Minimap.js","./Yscale":"Yscale.js"}],"Charts.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1071,7 +1221,7 @@ function () {
     key: "dowloadCharts",
     value: function dowloadCharts(canvas, canvasMinimap) {
       // this.charts = chartData.map(rawChart => new Chart(canvas, canvasMinimap, rawChart));
-      var chart = new _Chart.default(canvas, canvasMinimap, _chart_data.default[4]);
+      var chart = new _Chart.default(canvas, canvasMinimap, _chart_data.default[0]);
       this.charts = [chart];
     }
   }]);
@@ -1123,7 +1273,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "34273" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "43415" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
